@@ -1,0 +1,144 @@
+#include <iostream>
+#include <math.h>
+
+using namespace std;
+
+//数组显示函数，参数表：行数，列数，被显示的数组
+template<class T>
+void show(int m, int n, T** ImagetoShow)
+{
+	cout << "Result:" << endl;
+	for (int i = 0; i<m; ++i)
+	{
+		for (int j = 0; j<n; ++j)
+			cout << ImagetoShow[i][j] << '\t';
+		cout << endl;
+	}
+}
+
+//sobel算法，参数表：行数，列数，被执行运算的数组，结果数组
+double** sobel(int m, int n, int** image, double** res)
+{
+	//建立运算数组防止边界溢出
+	int** temp;
+	temp = new int*[m + 2];
+	for (int i = 0; i<m + 2; ++i)
+		temp[i] = new int[n + 2];
+
+	//数组初始化
+	//这一步并不必要，主要用于程序的调试过程
+	/*for (int i = 0; i<m + 2; ++i)
+		for (int j = 0; j<n + 2; ++j)
+			temp[i][j] = 0;*/
+
+	//图像复制
+	for (int i = 0; i<m; ++i)
+		for (int j = 0; j<n; ++j)
+			temp[i + 1][j + 1] = image[i][j];
+	
+	//防泄漏性填充，采用复制方法
+	for (int i = 0; i<m; ++i)                           //行填充，可合并
+	{
+		temp[0][i + 1] = temp[1][i + 1];
+		temp[m + 1][i + 1] = temp[m][i + 1];
+	}
+	for (int i = 0; i<n; ++i)                           //列填充
+	{
+		temp[i + 1][0] = temp[i + 1][1];
+		temp[i + 1][n + 1] = temp[i + 1][n];
+	}
+	temp[0][0] = temp[1][1];                            //四角填充
+	temp[0][n + 1] = temp[1][n];
+	temp[m + 1][0] = temp[m][1];
+	temp[m + 1][n + 1] = temp[m][n];
+
+	//执行sobel算子
+	double dx, dy;             //临时变量
+	int x, y;                  //中心像元坐标
+	for (int i = 0; i<m; ++i)
+		for (int j = 0; j<n; ++j)
+		{
+			//当前的操作中心像元是(x,y)
+			x = i + 1;
+			y = j + 1;
+			dx = temp[x - 1][y - 1] + 2 * temp[x][y - 1] + temp[x + 1][y - 1] - temp[x - 1][y + 1] - 2 * temp[x][y + 1] - temp[x + 1][y + 1];
+			dy = temp[x + 1][y - 1] + 2 * temp[x + 1][y] + temp[x + 1][y + 1] - temp[x - 1][y - 1] - 2 * temp[x - 1][y] - temp[x - 1][y + 1];
+			res[i][j] = sqrt(pow(dx, 2) + pow(dy, 2));
+		}
+
+	//析构
+	if (temp != NULL)
+	{
+		for (int i = 0; i < m + 2; ++i)
+		{
+			delete[] temp[i];
+			temp[i] = NULL;
+		}
+		delete[] temp;
+		temp = NULL;
+	}
+	return res;
+}
+
+int main()
+{
+	//确定图像大小
+	int m, n;
+	cout << "Input the size of image." << endl;
+	cin >> m >> n;
+	cout << "The size of image is Row " << m << " Col " << n << "." << endl;
+
+	//动态创建图像数组
+	int** image;
+	image = new int*[m];
+	for (int i = 0; i<m; ++i)
+		image[i] = new int[n];
+	cout << "Creating image successfully!" << endl;
+
+	//输入数组
+	for (int i = 0; i<m; ++i)
+	{
+		cout << "Row " << i + 1 << " :" << endl;
+		for (int j = 0; j<n; ++j)
+		{
+			cin >> image[i][j];
+		}
+		cout << "Row " << i + 1 << " Done!" << endl;
+	}
+	cout << "Data has been input!" << endl;
+	show(m, n, image);
+
+	//创建输出数组
+	double** res;
+	res = new double*[m];
+	for (int i = 0; i<m; ++i)
+		res[i] = new double[n];
+
+	//执行
+	show(m, n, sobel(m, n, image, res));
+
+	//数组析构
+	if (image != NULL)
+	{
+		for (int i = 0; i<m; ++i)
+		{
+			delete[] image[i];
+			image[i] = NULL;
+		}
+		delete[] image;
+		image = NULL;
+	}
+	if (res != NULL)
+	{
+		for (int i = 0; i<m; ++i)
+		{
+			delete[] res[i];
+			res[i] = NULL;
+		}
+		delete[] res;
+		res = NULL;
+	}
+
+	system("pause");
+	return 0;
+}
